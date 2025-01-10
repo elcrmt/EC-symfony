@@ -1,63 +1,107 @@
 <div class="modal" data-modal="true" id="search_modal">
     <div class="modal-content max-w-[600px] top-[15%]">
         <div class="modal-header py-4 px-5">
-            <i class="ki-filled ki-magnifier text-gray-700 text-xl">
-            </i>
-            <input class="input px-0 border-none bg-transparent shadow-none ms-2.5" name="query"
-                   placeholder="Rechercher..." type="text" value=""/>
+            <i class="ki-filled ki-magnifier text-gray-700 text-xl"></i>
+            <input class="input px-0 border-none bg-transparent shadow-none ms-2.5" 
+                   id="search_input"
+                   name="query"
+                   placeholder="Rechercher dans mes lectures..." 
+                   type="text" 
+                   value=""/>
             <button class="btn btn-sm btn-icon btn-light btn-clear shrink-0" data-modal-dismiss="true">
-                <i class="ki-filled ki-cross">
-                </i>
+                <i class="ki-filled ki-cross"></i>
             </button>
         </div>
         <div class="modal-body p-0 pb-5">
-            <div class="scrollable-y-auto" data-scrollable="true" data-scrollable-max-height="auto"
+            <div class="scrollable-y-auto" 
+                 data-scrollable="true" 
+                 data-scrollable-max-height="auto"
                  data-scrollable-offset="300px">
-                <div class="menu menu-default p-0 flex-col">
-                    <div class="grid gap-1">
-                        <div class="menu-item">
-                            <div class="menu-link flex justify-between gap-2">
-                                <div class="flex items-center gap-2.5">
-                                    <img alt="Cover" class="rounded-full size-9 shrink-0" src="" />
-                                    <div class="flex flex-col">
-                                        <a class="text-sm font-semibold text-gray-900 hover:text-primary-active mb-px"
-                                           href="#">
-                                            Le Moine qui vendit sa Ferrari
-                                        </a>
-                                        <span class="text-2sm font-normal text-gray-500">
-                                            Un conte sur la quête du bonheur et du succès intérieur.
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-2.5">
-                                    <div class="rating">
-                                        <div class="rating-label checked">
-                                            <i class="rating-on ki-solid ki-star text-base leading-none"></i>
-                                            <i class="rating-off ki-outline ki-star text-base leading-none"></i>
-                                        </div>
-                                        <div class="rating-label checked">
-                                            <i class="rating-on ki-solid ki-star text-base leading-none"></i>
-                                            <i class="rating-off ki-outline ki-star text-base leading-none"></i>
-                                        </div>
-                                        <div class="rating-label checked">
-                                            <i class="rating-on ki-solid ki-star text-base leading-none"></i>
-                                            <i class="rating-off ki-outline ki-star text-base leading-none"></i>
-                                        </div>
-                                        <div class="rating-label checked">
-                                            <i class="rating-on ki-solid ki-star text-base leading-none"></i>
-                                            <i class="rating-off ki-outline ki-star text-base leading-none"></i>
-                                        </div>
-                                        <div class="rating-label checked">
-                                            <i class="rating-on ki-solid ki-star text-base leading-none"></i>
-                                            <i class="rating-off ki-outline ki-star text-base leading-none"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div id="search_results" class="menu menu-default p-0 flex-col">
+                    <!-- Les résultats seront injectés ici -->
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search_input');
+    const searchResults = document.getElementById('search_results');
+    let timeout;
+
+    function getAllBooks() {
+        // Récupérer les livres des tableaux
+        const booksReading = Array.from(document.querySelectorAll('#reading-books-table tbody tr'));
+        const booksRead = Array.from(document.querySelectorAll('#read-books-table tbody tr'));
+        
+        // Récupérer les livres de la pagination
+        const paginatedBooks = Array.from(document.querySelectorAll('#current-books-table tbody tr'));
+        
+        // Combiner tous les livres
+        return [...booksReading, ...booksRead, ...paginatedBooks];
+    }
+
+    function filterBooks(query) {
+        const allBooks = getAllBooks();
+        query = query.toLowerCase();
+        
+        const filteredBooks = allBooks.filter(tr => {
+            const bookName = tr.querySelector('.book-edit')?.textContent.trim().toLowerCase() || '';
+            const bookNotes = tr.querySelector('.text-gray-700')?.textContent.trim().toLowerCase() || '';
+            return bookName.includes(query) || bookNotes.includes(query);
+        });
+
+        if (filteredBooks.length === 0) {
+            searchResults.innerHTML = `
+                <div class="p-5 text-center text-gray-500">
+                    Aucun livre trouvé
+                </div>
+            `;
+            return;
+        }
+
+        searchResults.innerHTML = filteredBooks.map(tr => {
+            const bookName = tr.querySelector('.book-edit')?.textContent.trim() || '';
+            const bookNotes = tr.querySelector('.text-gray-700')?.textContent.trim() || 'Aucune note';
+            const rating = tr.querySelector('.rating')?.innerHTML || '';
+            const status = tr.closest('#current-books-table') ? 'En cours' : 
+                          tr.closest('#reading-books-table') ? 'En cours' : 'Terminé';
+            
+            return `
+                <div class="menu-item">
+                    <div class="menu-link flex justify-between gap-2">
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold text-gray-900 mb-px">
+                                ${bookName}
+                                <span class="ms-2 badge badge-sm badge-${status === 'En cours' ? 'warning' : 'success'}">
+                                    ${status}
+                                </span>
+                            </span>
+                            <span class="text-2sm font-normal text-gray-500">
+                                ${bookNotes}
+                            </span>
+                        </div>
+                        <div class="rating">
+                            ${rating}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        timeout = setTimeout(() => filterBooks(query), 300);
+    });
+});
+</script>

@@ -10,6 +10,27 @@
             <i class="ki-filled ki-menu">
             </i>
         </button>
+        <button type="button" class="btn btn-sm btn-icon btn-light" data-modal="true" data-modal-target="search_modal">
+            <i class="ki-filled ki-magnifier text-gray-700 text-xl"></i>
+        </button>
+        <div class="d-flex align-items-center ms-auto">
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <span class="text-gray-700">{{ app.user.email }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{{ path('app_logout') }}">
+                            <i class="ki-duotone ki-exit-right fs-2">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                            </i>
+                            <span class="ms-2">Déconnexion</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
     <!-- End of Container -->
 </header>
